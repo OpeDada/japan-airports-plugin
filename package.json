@@ -6,11 +6,11 @@
     "node": ">=20.11.0"
   },
   "scripts": {
-    "dev:demo:main": "cross-env EXTENSION_NAME=demo UI_NAME=main vite -c configs/ui.ts",
-    "build:demo:main": "cross-env EXTENSION_NAME=demo UI_NAME=main vite build -c configs/ui.ts",
-    "build:demo:extension": "cross-env EXTENSION_NAME=demo vite build -c configs/extension.ts",
-    "build:demo": "run-s build:demo:main build:demo:extension",
-    "build": "run-s build:demo zip",
+    "dev:airports:main": "cross-env EXTENSION_NAME=airports UI_NAME=main vite -c configs/ui.ts",
+    "build:airports:main": "cross-env EXTENSION_NAME=airports UI_NAME=main vite build -c configs/ui.ts",
+    "build:airports:extension": "cross-env EXTENSION_NAME=airports vite build -c configs/extension.ts",
+    "build:airports": "run-s build:airports:main build:airports:extension",
+    "build": "run-s build:airports zip",
     "preview": "vite preview --port 5005 --strict-port",
     "zip": "node ./scripts/zip.mjs",
     "manage": "node ./scripts/manage.mjs",
@@ -18,17 +18,13 @@
     "lint": "eslint .",
     "fix": "eslint --fix .",
     "format": "prettier --write .",
-    "dev-build": "concurrently 'yarn dev:demo:main' 'yarn build:demo:main --watch' 'yarn build:demo:extension --watch' 'vite preview --port 5005 --strict-port'"
+    "dev-build": "concurrently 'yarn dev:airports:main' 'yarn build:airports:main --watch' 'yarn build:airports:extension --watch' 'vite preview --port 5005 --strict-port'"
   },
   "dependencies": {
-    "@radix-ui/react-icons": "1.3.2",
-    "@radix-ui/react-label": "2.1.7",
-    "@radix-ui/react-popover": "1.1.14",
     "@radix-ui/react-slot": "1.2.3",
     "@tailwindcss/vite": "4.1.10",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "lucide-react": "0.516.0",
     "tailwind-merge": "2.5.5",
     "tailwindcss-animate": "1.0.7",
     "tw-animate-css": "1.3.4"

@@ -1,4 +1,4 @@
-import html from "@distui/demo/main/index.html?raw";
+import html from "@distui/airports/main/index.html?raw";
 
 import { GlobalThis } from "@/shared/reearthTypes";
 

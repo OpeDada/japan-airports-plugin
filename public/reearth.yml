@@ -2,9 +2,9 @@ id: reearth-visualizer-plugin-shadcn-template
 name: Visualizer plugin shadcn template
 version: 1.0.0
 extensions:
-  - id: demo
+  - id: airports
     type: widget
-    name: Demo
+    name: Japan Airports
     schema:
       groups:
         - id: appearance
