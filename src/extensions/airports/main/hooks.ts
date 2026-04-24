@@ -19,16 +19,30 @@ type NewAirportForm = {
   longitude: string;
 };
 
-const CMS_BASE_URL = import.meta.env.VITE_CMS_BASE_URL;
-const API_URL = CMS_BASE_URL.replace(/\/p\/[^/]+$/, "");
+const API_URL = import.meta.env.VITE_CMS_API_URL;
 const WORKSPACE_ID = import.meta.env.VITE_CMS_WORKSPACE_ID;
 const PROJECT_ID = import.meta.env.VITE_CMS_PROJECT_ID;
-const PROJECT_ID_INTERNAL = import.meta.env.VITE_CMS_PROJECT_ID_INTERNAL;
 const MODEL_ID = import.meta.env.VITE_CMS_MODEL_ID;
-const MODEL_ID_INTERNAL = import.meta.env.VITE_CMS_MODEL_ID_INTERNAL;
 const TOKEN = import.meta.env.VITE_CMS_TOKEN;
 
-const ITEMS_URL = `${API_URL}/${WORKSPACE_ID}/projects/${PROJECT_ID_INTERNAL}/models/${MODEL_ID_INTERNAL}/items`;
+const ITEMS_URL = `${API_URL}/${WORKSPACE_ID}/projects/${PROJECT_ID}/models/${MODEL_ID}/items`;
+
+type RawItem = {
+  id: string;
+  fields: { key: string; value: unknown }[];
+};
+
+function toAirport(item: RawItem): Airport {
+  const f: Record<string, unknown> = {};
+  for (const field of item.fields) f[field.key] = field.value;
+  return {
+    id: item.id,
+    name: f.name as string,
+    prefecture: f.prefecture as string,
+    latitude: f.latitude as number,
+    longitude: f.longitude as number,
+  };
+}
 
 export default () => {
   const [grouped, setGrouped] = useState<GroupedAirports>({});
@@ -48,18 +62,31 @@ export default () => {
   useEffect(() => {
     const fetchAirports = async () => {
       try {
-        const res = await fetch(`${CMS_BASE_URL}/${PROJECT_ID}/${MODEL_ID}`, {
-          headers: { "X-Reearth-API-Key": TOKEN },
-        });
-        if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-        const data = await res.json();
-        const items: Airport[] = data.results ?? [];
+        const allItems: RawItem[] = [];
+        let page = 1;
+        while (true) {
+          const res = await fetch(`${ITEMS_URL}?page=${page}&perPage=100`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${TOKEN}`,
+              Accept: "application/json",
+            },
+          });
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`HTTP ${res.status}: ${text}`);
+          }
+          const data = await res.json();
+          allItems.push(...(data.items as RawItem[]));
+          if (allItems.length >= data.totalCount) break;
+          page++;
+        }
+        const items: Airport[] = allItems.map(toAirport);
 
         const groups: GroupedAirports = {};
         for (const item of items) {
-          const prefecture = item.prefecture;
-          if (!groups[prefecture]) groups[prefecture] = [];
-          groups[prefecture].push(item);
+          if (!groups[item.prefecture]) groups[item.prefecture] = [];
+          groups[item.prefecture].push(item);
         }
         setGrouped(groups);
         postMsg("addMarkers", items);
@@ -110,8 +137,11 @@ export default () => {
           ],
         }),
       });
-      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-      const created: Airport = await res.json();
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text}`);
+      }
+      const created: Airport = toAirport(await res.json());
       setGrouped((prev) => {
         const updated = { ...prev };
         const pref = created.prefecture;
