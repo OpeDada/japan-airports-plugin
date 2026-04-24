@@ -12,7 +12,6 @@ type Airport = {
 
 type Comment = {
   id: string;
-  authorType: string;
   content: string;
   createdAt: string;
 };
@@ -63,11 +62,7 @@ export default () => {
         let page = 1;
         while (true) {
           const res = await fetch(`${ITEMS_URL}?page=${page}&perPage=100`, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${TOKEN}`,
-              Accept: "application/json",
-            },
+            headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json" },
           });
           if (!res.ok) {
             const text = await res.text();
@@ -102,10 +97,7 @@ export default () => {
     setComments([]);
     try {
       const res = await fetch(`${ITEMS_URL}/${airportId}/comments`, {
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          Accept: "application/json",
-        },
+        headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json" },
       });
       if (!res.ok) {
         const text = await res.text();
