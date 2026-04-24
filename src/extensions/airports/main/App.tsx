@@ -13,15 +13,17 @@ function App() {
     grouped,
     selectedPrefecture,
     selectedAirport,
+    comments,
+    newComment,
+    loadingComments,
+    postingComment,
+    commentError,
     loading,
     error,
-    adding,
-    addError,
-    form,
-    setForm,
+    setNewComment,
     handleSelectPrefecture,
     handleSelectAirport,
-    handleAddAirport,
+    handlePostComment,
   } = useHooks();
 
   if (loading) return <p className="p-4 text-sm">Loading airports...</p>;
@@ -32,50 +34,7 @@ function App() {
       <CardHeader>
         <CardTitle className="text-base">Japan Airports</CardTitle>
       </CardHeader>
-      <CardContent className="p-2 space-y-2 overflow-y-auto max-h-[80vh]">
-        <div className="space-y-1 border rounded p-2">
-          <p className="text-xs font-semibold text-gray-500">Add Airport</p>
-          <input
-            type="text"
-            placeholder="Name"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="w-full text-xs border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400"
-          />
-          <input
-            type="text"
-            placeholder="Prefecture"
-            value={form.prefecture}
-            onChange={(e) => setForm((f) => ({ ...f, prefecture: e.target.value }))}
-            className="w-full text-xs border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400"
-          />
-          <div className="flex gap-1">
-            <input
-              type="number"
-              placeholder="Latitude"
-              value={form.latitude}
-              onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))}
-              className="flex-1 text-xs border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400"
-            />
-            <input
-              type="number"
-              placeholder="Longitude"
-              value={form.longitude}
-              onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))}
-              className="flex-1 text-xs border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400"
-            />
-          </div>
-          {addError && <p className="text-xs text-red-500">{addError}</p>}
-          <Button
-            size="sm"
-            className="w-full"
-            disabled={adding || !form.name.trim() || !form.prefecture.trim() || !form.latitude || !form.longitude}
-            onClick={handleAddAirport}
-          >
-            {adding ? "Adding..." : "Add Airport"}
-          </Button>
-        </div>
-
+      <CardContent className="p-2 space-y-1 overflow-y-auto max-h-[80vh]">
         {Object.keys(grouped)
           .sort()
           .map((prefecture) => (
@@ -91,14 +50,58 @@ function App() {
               {selectedPrefecture === prefecture && (
                 <div className="ml-4 space-y-1">
                   {grouped[prefecture].map((airport) => (
-                    <Button
-                      key={airport.id}
-                      variant={selectedAirport?.id === airport.id ? "secondary" : "ghost"}
-                      className="w-full justify-start text-sm font-normal"
-                      onClick={() => handleSelectAirport(airport)}
-                    >
-                      ✈ {airport.name}
-                    </Button>
+                    <div key={airport.id}>
+                      <Button
+                        variant={selectedAirport?.id === airport.id ? "secondary" : "ghost"}
+                        className="w-full justify-start text-sm font-normal"
+                        onClick={() => handleSelectAirport(airport)}
+                      >
+                        ✈ {airport.name}
+                      </Button>
+
+                      {selectedAirport?.id === airport.id && (
+                        <div className="ml-2 mt-1 mb-2 border-l-2 pl-2 space-y-2">
+                          {loadingComments ? (
+                            <p className="text-xs text-gray-400">Loading comments...</p>
+                          ) : comments.length === 0 ? (
+                            <p className="text-xs text-gray-400">No comments yet</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {comments.map((c) => (
+                                <div key={c.id} className="text-xs bg-gray-50 rounded p-2">
+                                  <p className="text-gray-600">{c.content}</p>
+                                  <p className="text-gray-400 mt-1">
+                                    {new Date(c.createdAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {commentError && (
+                            <p className="text-xs text-red-500">{commentError}</p>
+                          )}
+
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && handlePostComment()}
+                              placeholder="Add a comment..."
+                              className="flex-1 text-xs border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={handlePostComment}
+                              disabled={postingComment || !newComment.trim()}
+                            >
+                              {postingComment ? "..." : "Post"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}

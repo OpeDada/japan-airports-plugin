@@ -10,14 +10,14 @@ type Airport = {
   longitude: number;
 };
 
-type GroupedAirports = Record<string, Airport[]>;
-
-type NewAirportForm = {
-  name: string;
-  prefecture: string;
-  latitude: string;
-  longitude: string;
+type Comment = {
+  id: string;
+  authorType: string;
+  content: string;
+  createdAt: string;
 };
+
+type GroupedAirports = Record<string, Airport[]>;
 
 const API_URL = import.meta.env.VITE_CMS_API_URL;
 const WORKSPACE_ID = import.meta.env.VITE_CMS_WORKSPACE_ID;
@@ -48,16 +48,13 @@ export default () => {
   const [grouped, setGrouped] = useState<GroupedAirports>({});
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
   const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [postingComment, setPostingComment] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
-  const [form, setForm] = useState<NewAirportForm>({
-    name: "",
-    prefecture: "",
-    latitude: "",
-    longitude: "",
-  });
 
   useEffect(() => {
     const fetchAirports = async () => {
@@ -100,75 +97,88 @@ export default () => {
     fetchAirports();
   }, []);
 
+  const fetchComments = useCallback(async (airportId: string) => {
+    setLoadingComments(true);
+    setComments([]);
+    try {
+      const res = await fetch(`${ITEMS_URL}/${airportId}/comments`, {
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          Accept: "application/json",
+        },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text}`);
+      }
+      const data = await res.json();
+      setComments(data.comments ?? []);
+    } catch (err) {
+      console.error("Failed to load comments", err);
+    } finally {
+      setLoadingComments(false);
+    }
+  }, []);
+
   const handleSelectPrefecture = useCallback((prefecture: string) => {
     setSelectedPrefecture((prev) => (prev === prefecture ? null : prefecture));
     setSelectedAirport(null);
+    setComments([]);
   }, []);
 
-  const handleSelectAirport = useCallback((airport: Airport) => {
-    setSelectedAirport(airport);
-    postMsg("flyToAirport", {
-      latitude: airport.latitude,
-      longitude: airport.longitude,
-    });
-  }, []);
+  const handleSelectAirport = useCallback(
+    (airport: Airport) => {
+      setSelectedAirport(airport);
+      postMsg("flyToAirport", {
+        latitude: airport.latitude,
+        longitude: airport.longitude,
+      });
+      fetchComments(airport.id);
+    },
+    [fetchComments],
+  );
 
-  const handleAddAirport = useCallback(async () => {
-    const lat = parseFloat(form.latitude);
-    const lng = parseFloat(form.longitude);
-    if (!form.name.trim() || !form.prefecture.trim() || isNaN(lat) || isNaN(lng)) return;
-
-    setAdding(true);
-    setAddError(null);
+  const handlePostComment = useCallback(async () => {
+    if (!selectedAirport || !newComment.trim()) return;
+    setPostingComment(true);
+    setCommentError(null);
     try {
-      const res = await fetch(ITEMS_URL, {
+      const res = await fetch(`${ITEMS_URL}/${selectedAirport.id}/comments`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${TOKEN}`,
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          fields: [
-            { key: "name", type: "text", value: form.name.trim() },
-            { key: "prefecture", type: "text", value: form.prefecture.trim() },
-            { key: "latitude", type: "number", value: lat },
-            { key: "longitude", type: "number", value: lng },
-          ],
-        }),
+        body: JSON.stringify({ content: newComment.trim() }),
       });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`HTTP ${res.status}: ${text}`);
       }
-      const created: Airport = toAirport(await res.json());
-      setGrouped((prev) => {
-        const updated = { ...prev };
-        const pref = created.prefecture;
-        if (!updated[pref]) updated[pref] = [];
-        updated[pref] = [...updated[pref], created];
-        return updated;
-      });
-      setForm({ name: "", prefecture: "", latitude: "", longitude: "" });
+      setNewComment("");
+      await fetchComments(selectedAirport.id);
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : "Failed to add airport");
+      setCommentError(err instanceof Error ? err.message : "Failed to post comment");
     } finally {
-      setAdding(false);
+      setPostingComment(false);
     }
-  }, [form]);
+  }, [selectedAirport, newComment, fetchComments]);
 
   return {
     grouped,
     selectedPrefecture,
     selectedAirport,
+    comments,
+    newComment,
+    loadingComments,
+    postingComment,
+    commentError,
     loading,
     error,
-    adding,
-    addError,
-    form,
-    setForm,
+    setNewComment,
     handleSelectPrefecture,
     handleSelectAirport,
-    handleAddAirport,
+    handlePostComment,
   };
 };
