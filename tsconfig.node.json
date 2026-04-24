@@ -9,6 +9,6 @@
     "strict": true,
     "noEmit": true
   },
-  "include": ["configs/ui.ts"],
+  "include": ["configs/ui.ts", "configs/extension.ts"],
   "exclude": ["node_modules", "dist", "dist-ui"]
 }

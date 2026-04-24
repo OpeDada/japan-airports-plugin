@@ -1,97 +1,61 @@
-import { ArrowRightCircle } from "lucide-react";
-
 import useHooks from "./hooks";
 
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table";
-
 
 function App() {
-  const { mouseLocation, handleFlyToTokyo } = useHooks();
+  const {
+    grouped,
+    selectedPrefecture,
+    loading,
+    error,
+    handleSelectPrefecture,
+    handleSelectAirport,
+  } = useHooks();
 
-  // This is a simple example of a UI from ShadCN
-  // https://ui.shadcn.com/blocks
+  if (loading) return <p className="p-4 text-sm">Loading airports...</p>;
+  if (error) return <p className="p-4 text-sm text-red-500">{error}</p>;
+
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Hello world</CardTitle>
-        <CardDescription>
-          Lipsum dolor sit amet, consectetur adipiscing elit
-        </CardDescription>
+        <CardTitle className="text-base">Japan Airports</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]" />
-              <TableHead>Longitude</TableHead>
-              <TableHead>Latitude</TableHead>
-              <TableHead>Height</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow>
-              <TableCell className="font-semibold">Mouse</TableCell>
-              <TableCell>
-                <Label htmlFor="mouse-lng" className="sr-only">
-                  Longitude
-                </Label>
-                <Input
-                  id="mouse-lng"
-                  type="number"
-                  disabled
-                  value={mouseLocation.lng}
-                />
-              </TableCell>
-              <TableCell>
-                <Label htmlFor="mouse-lat" className="sr-only">
-                  Latitude
-                </Label>
-                <Input
-                  id="mouse-lat"
-                  type="number"
-                  disabled
-                  value={mouseLocation.lat}
-                />
-              </TableCell>
-              <TableCell>
-                <Label htmlFor="mouse-height" className="sr-only">
-                  Height
-                </Label>
-                <Input
-                  id="mouse-height"
-                  type="number"
-                  disabled
-                  value={mouseLocation.height}
-                />
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+      <CardContent className="p-2 space-y-1 overflow-y-auto max-h-[80vh]">
+        {Object.keys(grouped)
+          .sort()
+          .map((prefecture) => (
+            <div key={prefecture}>
+              <Button
+                variant="ghost"
+                className="w-full justify-start font-semibold"
+                onClick={() => handleSelectPrefecture(prefecture)}
+              >
+                {selectedPrefecture === prefecture ? "▼" : "▶"} {prefecture}
+              </Button>
+
+              {selectedPrefecture === prefecture && (
+                <div className="ml-4 space-y-1">
+                  {grouped[prefecture].map((airport) => (
+                    <Button
+                      key={airport.id}
+                      variant="ghost"
+                      className="w-full justify-start text-sm font-normal"
+                      onClick={() => handleSelectAirport(airport)}
+                    >
+                      ✈ {airport.name}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
       </CardContent>
-      <CardFooter className="justify-center p-4 border-t">
-        <Button size="sm" className="gap-1" onClick={handleFlyToTokyo}>
-          <ArrowRightCircle className="w-5 h-5" />
-          Fly to Tokyo
-        </Button>
-      </CardFooter>
     </Card>
   );
 }

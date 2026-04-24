@@ -1,45 +1,55 @@
 import html from "@distui/demo/main/index.html?raw";
 
-import { GlobalThis, MouseEventProps } from "@/shared/reearthTypes";
-
-type WidgetProperty = { appearance?: { primary_color?: string } };
+import { GlobalThis } from "@/shared/reearthTypes";
 
 const reearth = (globalThis as unknown as GlobalThis).reearth;
 reearth.ui.show(html);
 
-// Get message from UI
 reearth.extension.on("message", (message: unknown) => {
   const msg = message as { action: string; payload?: any };
-  if (
-    msg &&
-    typeof msg === "object" &&
-    "action" in msg &&
-    msg.action === "flyToTokyo"
-  ) {
-    reearth.camera.flyTo(
-      { lat: 35.68505398711427, lng: 139.75584459383325, height: 5000 },
-      { duration: 1 }
+  if (!msg || typeof msg !== "object" || !("action" in msg)) return;
+
+  if (msg.action === "flyToAirport") {
+    reearth.camera.lookAt(
+      {
+        lat: msg.payload.latitude,
+        lng: msg.payload.longitude,
+        height: 0,
+        range: 1500,
+        pitch: -0.5,
+      },
+      { duration: 2 },
     );
   }
-});
 
-const handleMouseMove = (e: MouseEventProps) => {
-  // Post message to UI
-  reearth.ui.postMessage({ action: "mouseMove", payload: e });
-};
+  if (msg.action === "addMarkers") {
+    const airports = msg.payload as {
+      id: string;
+      name: string;
+      latitude: number;
+      longitude: number;
+    }[];
 
-reearth.viewer.on("mouseMove", handleMouseMove);
-
-// Post message to UI when initialize
-// !! NOTE !! You don't need to use this unless you need some initialize on first render
-
-// Binding event listener on UI by react will not be ready at this moment.
-// We need to add a data transformer to hold the initial message
-// Please check ./main/index.html for more details
-reearth.ui.postMessage({
-  action: "__init__",
-  payload: {
-    primaryColor: (reearth.extension.widget?.property as WidgetProperty)
-      ?.appearance?.primary_color,
-  },
+    reearth.layers.add({
+      type: "simple",
+      data: {
+        type: "geojson",
+        value: {
+          type: "FeatureCollection",
+          features: airports.map((a) => ({
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [a.longitude, a.latitude],
+            },
+            properties: { name: a.name },
+          })),
+        },
+      },
+      marker: {
+        pointColor: "#4a90e2",
+        pointSize: 12,
+      },
+    });
+  }
 });

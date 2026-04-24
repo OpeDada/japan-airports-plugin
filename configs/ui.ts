@@ -27,6 +27,7 @@ export default defineConfig({
   ],
   define: { "process.env.VERSION": JSON.stringify(pkg.version) },
   root: path.resolve(__dirname, "../src/extensions", extensionName, uiName),
+  envDir: path.resolve(__dirname, ".."),
   appType: "spa",
   publicDir: false,
   build: {
